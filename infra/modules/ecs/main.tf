@@ -6,7 +6,7 @@ resource "aws_ecs_cluster" "main" {
   })
 }
 
-# Application Load Balancer
+
 resource "aws_lb" "main" {
   name               = "${var.project_name}-${var.environment}-alb"
   internal           = false
