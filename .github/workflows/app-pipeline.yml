@@ -125,30 +125,7 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-    - name: Comment Docker build info on PR
-      if: github.event_name == 'pull_request'
-      uses: actions/github-script@v6
-      with:
-        script: |
-          const output = `## 🐳 Docker Build for Test Environment
-          
-          **Image:** \`${{ env.ECR_REGISTRY }}/devops-app-test\`
-          **Tags:** 
-          \`\`\`
-          ${{ steps.meta.outputs.tags }}
-          \`\`\`
-          **Digest:** \`${{ steps.build.outputs.digest }}\`
-          **Status:** ✅ Build successful
-          
-          The image will be deployed to ECS Test environment after merge.``;
-          
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: output
-          });
-
+    
   build_prod:
     name: Build Production Docker Image
     runs-on: ubuntu-latest
@@ -201,29 +178,6 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-    - name: Comment Docker build info on PR
-      if: github.event_name == 'pull_request'
-      uses: actions/github-script@v6
-      with:
-        script: |
-          const output = `## 🚀 Docker Build for Production Environment
-          
-          **Image:** \`${{ env.ECR_REGISTRY }}/devops-app-prod\`
-          **Tags:** 
-          \`\`\`
-          ${{ steps.meta.outputs.tags }}
-          \`\`\`
-          **Digest:** \`${{ steps.build.outputs.digest }}\`
-          **Status:** ✅ Build successful
-          
-          **⚠️ Note:** The image will be deployed to ECS PRODUCTION environment after merge!`;
-          
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: output
-          });
 
   deploy_test:
     name: Deploy to Test Environment

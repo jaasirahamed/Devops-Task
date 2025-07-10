@@ -7,7 +7,6 @@ terraform {
   }
 }
 
-# Local values for computed names and tags
 locals {
   # Common tags to be applied to all resources
   common_tags = {
