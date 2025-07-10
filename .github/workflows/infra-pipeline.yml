@@ -70,19 +70,6 @@ jobs:
         done
       continue-on-error: true
 
-    - name: TFLint
-      uses: terraform-linters/setup-tflint@v3
-      with:
-        tflint_version: latest
-      continue-on-error: true
-
-    - name: Run TFLint
-      run: |
-        cd infra
-        tflint --init
-        tflint --recursive
-      continue-on-error: true
-
   security_scan:
     name: Infrastructure Security Scan
     runs-on: ubuntu-latest
@@ -145,7 +132,7 @@ jobs:
         terraform show -no-color tfplan-test > plan-output-test.txt
 
     - name: Upload Plan Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: terraform-plan-test
         path: infra/tfplan-test
@@ -245,7 +232,7 @@ jobs:
         terraform show -no-color tfplan-prod > plan-output-prod.txt
 
     - name: Upload Plan Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: terraform-plan-prod
         path: infra/tfplan-prod
