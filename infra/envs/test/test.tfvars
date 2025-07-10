@@ -19,10 +19,10 @@ app_secret = "test-secret-value-123"
 test_certificate_arn = "arn:aws:acm:us-east-1:028425946832:certificate/4ca5d893-a848-45cc-90a0-37316d26262d"
 test_domain_name = "app-test.codeopssolutions.com"
 
-# Backend configuration
-state_bucket_name = "devops-app-terraform-state-test"
-dynamodb_table_name = "terraform-lock-test"
-state_key_prefix = "test/terraform.tfstate"
+# # Backend configuration
+# state_bucket_name = "devops-app-terraform-state-test"
+# dynamodb_table_name = "terraform-lock-test"
+# state_key_prefix = "test/terraform.tfstate"
 
 # ECS Configuration
 task_cpu = "256"
