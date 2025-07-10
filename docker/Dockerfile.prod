@@ -26,7 +26,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy the application code to the container
 COPY app/ .
 
-# Create non-root user for security
+# Create non-root user for security reasons
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 RUN chown -R appuser:appuser $APP_HOME
 USER appuser

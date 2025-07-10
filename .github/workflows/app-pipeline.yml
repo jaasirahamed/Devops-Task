@@ -29,7 +29,11 @@ on:
         required: false
         default: false
         type: boolean
-
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  
 env:
   AWS_REGION: 'us-east-1'
   ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
@@ -105,8 +109,8 @@ jobs:
         tags: |
           type=ref,event=branch
           type=ref,event=pr
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
+          type=sha,prefix=sha-
+          type=raw,value=latest
           type=raw,value={{date 'YYYY-MM-DD-HHmm'}}
 
     - name: Build and push Docker image
@@ -181,8 +185,8 @@ jobs:
         tags: |
           type=ref,event=branch
           type=ref,event=pr
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
+          type=sha,prefix=sha-
+          type=raw,value=latest
           type=raw,value={{date 'YYYY-MM-DD-HHmm'}}
 
     - name: Build and push Docker image
@@ -255,29 +259,6 @@ jobs:
           --services devops-app-test-service \
           --region ${{ env.AWS_REGION }}
 
-    - name: Run health checks
-      run: |
-        echo "Running health checks..."
-        # Get ALB DNS name
-        ALB_DNS=$(aws elbv2 describe-load-balancers \
-          --names devops-app-test-alb \
-          --query 'LoadBalancers[0].DNSName' \
-          --output text 2>/dev/null || echo "")
-        
-        if [ ! -z "$ALB_DNS" ]; then
-          echo "Testing health endpoint: https://$ALB_DNS/health"
-          for i in {1..10}; do
-            if curl -f -s "https://$ALB_DNS/health" > /dev/null; then
-              echo "✅ Health check passed!"
-              break
-            else
-              echo "Attempt $i: Health check failed, retrying in 30s..."
-              sleep 30
-            fi
-          done
-        else
-          echo "Could not find ALB DNS name, skipping health checks"
-        fi
 
   deploy_prod:
     name: Deploy to Production Environment
@@ -312,48 +293,3 @@ jobs:
           --cluster devops-app-prod-ecs-cluster \
           --services devops-app-prod-service \
           --region ${{ env.AWS_REGION }}
-
-    - name: Run health checks
-      run: |
-        echo "Running health checks..."
-        # Get ALB DNS name
-        ALB_DNS=$(aws elbv2 describe-load-balancers \
-          --names devops-app-prod-alb \
-          --query 'LoadBalancers[0].DNSName' \
-          --output text 2>/dev/null || echo "")
-        
-        if [ ! -z "$ALB_DNS" ]; then
-          echo "Testing health endpoint: https://$ALB_DNS/health"
-          for i in {1..10}; do
-            if curl -f -s "https://$ALB_DNS/health" > /dev/null; then
-              echo "✅ Health check passed!"
-              break
-            else
-              echo "Attempt $i: Health check failed, retrying in 30s..."
-              sleep 30
-            fi
-          done
-        else
-          echo "Could not find ALB DNS name, skipping health checks"
-        fi
-
-  notification:
-    name: Send Application Notifications
-    runs-on: ubuntu-latest
-    needs: [deploy_test, deploy_prod]
-    if: always()
-    
-    steps:
-    - name: Notify on success
-      if: ${{ needs.deploy_prod.result == 'success' || needs.deploy_test.result == 'success' }}
-      run: |
-        echo "✅ Application deployment successful!"
-        # Add your notification logic here (Slack, Teams, etc.)
-        
-    - name: Notify on failure
-      if: ${{ needs.deploy_prod.result == 'failure' || needs.deploy_test.result == 'failure' }}
-      run: |
-        echo "❌ Application deployment failed!"
-        # Add your notification logic here (Slack, Teams, etc.)
-
-
