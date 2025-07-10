@@ -1,0 +1,42 @@
+# Test Dockerfile for DevOps App
+FROM python:3.11-slim
+
+# Set environment variables for test
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV APP_HOME=/app
+ENV ENVIRONMENT=test
+ENV FLASK_ENV=development
+ENV FLASK_DEBUG=1
+
+# Set the working directory in the container
+WORKDIR $APP_HOME
+
+# Install system dependencies including dev tools
+RUN apt-get update && apt-get install -y \
+    curl \
+    vim \
+    net-tools \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for better caching
+COPY app/requirements.txt .
+COPY app/requirements-dev.txt .
+
+# Install Python dependencies including dev dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -r requirements-dev.txt
+
+# Copy the application code to the container
+COPY app/ .
+
+# Expose the application port
+EXPOSE 5000
+
+# Health check with more verbose output for testing
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+  CMD curl -f http://localhost:5000/health || exit 1
+
+# Command to run the application with Flask dev server for testing
+CMD ["python", "app.py"]

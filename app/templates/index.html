@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevOps Portfolio - Jasir</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 800px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .profile-section {
+            margin-bottom: 30px;
+        }
+
+        .profile-image {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 48px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .name {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .title {
+            font-size: 1.4em;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .greeting {
+            font-size: 1.2em;
+            color: #34495e;
+            margin-bottom: 30px;
+            line-height: 1.8;
+        }
+
+        .contact-info {
+            margin-top: 15px;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .contact-info a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .skills-section {
+            margin: 30px 0;
+        }
+
+        .skills-title {
+            font-size: 1.3em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .skill-item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-weight: 500;
+            transition: transform 0.3s ease;
+        }
+
+        .skill-item:hover {
+            transform: translateY(-3px);
+        }
+
+        .status-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #28a745;
+            border-radius: 50%;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .api-links {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .api-link {
+            background: #34495e;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: background 0.3s ease;
+            font-weight: 500;
+        }
+
+        .api-link:hover {
+            background: #2c3e50;
+            transform: translateY(-2px);
+        }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ecf0f1;
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                margin: 20px;
+                padding: 30px 20px;
+            }
+            
+            .name {
+                font-size: 2em;
+            }
+            
+            .api-links {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="profile-section">
+            <div class="profile-image">JA</div>
+            <h1 class="name">Jasir Ahamed</h1>
+            <h2 class="title">Senior DevOps Engineer</h2>
+            <p class="greeting">
+                👋 Hi Team! Nice to meet you!<br>
+                Welcome to my DevOps portfolio and application showcase.
+            </p>
+            <div class="contact-info">
+                <p style="margin-top: 15px; color: #667eea; font-weight: 500;">
+                    📧 <a href="mailto:Jasirkp26@gmail.com" style="color: #667eea; text-decoration: none;">Jasirkp26@gmail.com</a>
+                </p>
+            </div>
+        </div>
+
+        <div class="skills-section">
+            <h3 class="skills-title">🛠️ DevOps Expertise & Technologies</h3>
+            <div class="skills-grid">
+                <div class="skill-item">AWS Cloud</div>
+                <div class="skill-item">Azure Cloud</div>
+                <div class="skill-item">Docker</div>
+                <div class="skill-item">Terraform</div>
+                <div class="skill-item">Ansible</div>
+                <div class="skill-item">Jenkins</div>
+                <div class="skill-item">GitHub Actions</div>
+                <div class="skill-item">GitHub</div>
+                <div class="skill-item">GitLab</div>
+                <div class="skill-item">Python</div>
+                <div class="skill-item">Bash Scripting</div>
+                <div class="skill-item">Monitoring</div>
+                <div class="skill-item">Security</div>
+                <div class="skill-item">Linux</div>
+            </div>
+        </div>
+
+        <div class="status-section">
+            <h3 style="margin-bottom: 10px; color: #2c3e50;">
+                <span class="status-indicator"></span>
+                Application Status
+            </h3>
+            <p>🚀 Application is running smoothly on AWS ECS</p>
+            <p>🔧 Infrastructure managed with Terraform</p>
+            <p>📊 Monitoring and logging enabled</p>
+            {% if env_info %}
+            <div style="margin-top: 15px; padding: 15px; background: {% if env_info.is_test %}#fff3cd{% elif env_info.is_production %}#d4edda{% else %}#f8f9fa{% endif %}; border-radius: 8px;">
+                <h4 style="margin-bottom: 10px; color: #2c3e50;">🌍 Environment Information</h4>
+                <p><strong>Environment:</strong> 
+                    <span style="{% if env_info.is_test %}color: #856404;{% elif env_info.is_production %}color: #155724;{% else %}color: #6c757d;{% endif %} font-weight: bold;">
+                        {{ env_info.environment.upper() }}
+                    </span>
+                </p>
+                <p><strong>Domain:</strong> 
+                    {% if env_info.is_test %}
+                        <span style="color: #856404;">app-test.codeopssolutions.com</span>
+                    {% else %}
+                        <span style="color: #155724;">codeopssolutions.com</span>
+                    {% endif %}
+                </p>
+                <p><strong>Debug Mode:</strong> 
+                    <span style="color: {% if env_info.debug %}#dc3545{% else %}#28a745{% endif %};">
+                        {{ 'ON' if env_info.debug else 'OFF' }}
+                    </span>
+                </p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="api-links">
+            <a href="/api" class="api-link">📡 API Endpoint</a>
+            <a href="/health" class="api-link">❤️ Health Check</a>
+            <a href="/version" class="api-link">🏷️ Version Info</a>
+            <a href="/env" class="api-link">🌍 Environment Info</a>
+        </div>
+
+        <div class="footer">
+            <p>Built with ❤️ using Flask, Docker, AWS ECS, and Terraform</p>
+            <p>© 2025 Jasir - Senior DevOps Engineer</p>
+        </div>
+    </div>
+</body>
+</html>

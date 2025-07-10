@@ -1,0 +1,359 @@
+name: Application CI/CD Pipeline
+
+on:
+  push:
+    branches: [ test, main ]
+    paths:
+      - 'app/**'
+      - 'docker/Dockerfile.test'
+      - 'docker/Dockerfile.prod'
+      - '.github/workflows/app-pipeline.yml'
+  pull_request:
+    branches: [ test, main ]
+    paths:
+      - 'app/**'
+      - 'docker/Dockerfile.test'
+      - 'docker/Dockerfile.prod'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'test'
+        type: choice
+        options:
+          - test
+          - prod
+      skip_tests:
+        description: 'Skip tests'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  AWS_REGION: 'us-east-1'
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+
+jobs:
+  detect_changes:
+    name: Detect Application Changes
+    runs-on: ubuntu-latest
+    outputs:
+      app_changed: ${{ steps.changes.outputs.app }}
+      test_dockerfile_changed: ${{ steps.changes.outputs.test_dockerfile }}
+      prod_dockerfile_changed: ${{ steps.changes.outputs.prod_dockerfile }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
+
+    - name: Detect changes
+      id: changes
+      run: |
+        if git diff --name-only HEAD~1 HEAD | grep -E '^app/'; then
+          echo "app=true" >> $GITHUB_OUTPUT
+        else
+          echo "app=false" >> $GITHUB_OUTPUT
+        fi
+        
+        if git diff --name-only HEAD~1 HEAD | grep -E '^docker/Dockerfile\.test'; then
+          echo "test_dockerfile=true" >> $GITHUB_OUTPUT
+        else
+          echo "test_dockerfile=false" >> $GITHUB_OUTPUT
+        fi
+        
+        if git diff --name-only HEAD~1 HEAD | grep -E '^docker/Dockerfile\.prod'; then
+          echo "prod_dockerfile=true" >> $GITHUB_OUTPUT
+        else
+          echo "prod_dockerfile=false" >> $GITHUB_OUTPUT
+        fi
+
+  build_test:
+    name: Build Test Docker Image
+    runs-on: ubuntu-latest
+    needs: [detect_changes]
+    if: (needs.detect_changes.outputs.app_changed == 'true' || needs.detect_changes.outputs.test_dockerfile_changed == 'true') && (github.event_name == 'pull_request' && github.base_ref == 'test' || github.ref == 'refs/heads/test')
+    
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+      image_digest: ${{ steps.build.outputs.digest }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.ECR_REGISTRY }}/devops-app-test
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=raw,value={{date 'YYYY-MM-DD-HHmm'}}
+
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./docker/Dockerfile.test
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Comment Docker build info on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const output = `## 🐳 Docker Build for Test Environment
+          
+          **Image:** \`${{ env.ECR_REGISTRY }}/devops-app-test\`
+          **Tags:** 
+          \`\`\`
+          ${{ steps.meta.outputs.tags }}
+          \`\`\`
+          **Digest:** \`${{ steps.build.outputs.digest }}\`
+          **Status:** ✅ Build successful
+          
+          The image will be deployed to ECS Test environment after merge.``;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          });
+
+  build_prod:
+    name: Build Production Docker Image
+    runs-on: ubuntu-latest
+    needs: [detect_changes]
+    if: (needs.detect_changes.outputs.app_changed == 'true' || needs.detect_changes.outputs.prod_dockerfile_changed == 'true') && (github.event_name == 'pull_request' && github.base_ref == 'main' || github.ref == 'refs/heads/main')
+    
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+      image_digest: ${{ steps.build.outputs.digest }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.ECR_REGISTRY }}/devops-app-prod
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=raw,value={{date 'YYYY-MM-DD-HHmm'}}
+
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./docker/Dockerfile.prod
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Comment Docker build info on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const output = `## 🚀 Docker Build for Production Environment
+          
+          **Image:** \`${{ env.ECR_REGISTRY }}/devops-app-prod\`
+          **Tags:** 
+          \`\`\`
+          ${{ steps.meta.outputs.tags }}
+          \`\`\`
+          **Digest:** \`${{ steps.build.outputs.digest }}\`
+          **Status:** ✅ Build successful
+          
+          **⚠️ Note:** The image will be deployed to ECS PRODUCTION environment after merge!`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          });
+
+  deploy_test:
+    name: Deploy to Test Environment
+    runs-on: ubuntu-latest
+    needs: [build_test]
+    if: github.ref == 'refs/heads/test' && github.event_name == 'push'
+    environment: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Update ECS Service
+      run: |
+        echo "Updating ECS service for test environment..."
+        aws ecs update-service \
+          --cluster devops-app-test-ecs-cluster \
+          --service devops-app-test-service \
+          --force-new-deployment
+
+    - name: Wait for deployment to complete
+      run: |
+        echo "Waiting for ECS service to stabilize..."
+        aws ecs wait services-stable \
+          --cluster devops-app-test-ecs-cluster \
+          --services devops-app-test-service \
+          --region ${{ env.AWS_REGION }}
+
+    - name: Run health checks
+      run: |
+        echo "Running health checks..."
+        # Get ALB DNS name
+        ALB_DNS=$(aws elbv2 describe-load-balancers \
+          --names devops-app-test-alb \
+          --query 'LoadBalancers[0].DNSName' \
+          --output text 2>/dev/null || echo "")
+        
+        if [ ! -z "$ALB_DNS" ]; then
+          echo "Testing health endpoint: https://$ALB_DNS/health"
+          for i in {1..10}; do
+            if curl -f -s "https://$ALB_DNS/health" > /dev/null; then
+              echo "✅ Health check passed!"
+              break
+            else
+              echo "Attempt $i: Health check failed, retrying in 30s..."
+              sleep 30
+            fi
+          done
+        else
+          echo "Could not find ALB DNS name, skipping health checks"
+        fi
+
+  deploy_prod:
+    name: Deploy to Production Environment
+    runs-on: ubuntu-latest
+    needs: [build_prod]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Update ECS Service
+      run: |
+        echo "Updating ECS service for production environment..."
+        aws ecs update-service \
+          --cluster devops-app-prod-ecs-cluster \
+          --service devops-app-prod-service \
+          --force-new-deployment
+
+    - name: Wait for deployment to complete
+      run: |
+        echo "Waiting for ECS service to stabilize..."
+        aws ecs wait services-stable \
+          --cluster devops-app-prod-ecs-cluster \
+          --services devops-app-prod-service \
+          --region ${{ env.AWS_REGION }}
+
+    - name: Run health checks
+      run: |
+        echo "Running health checks..."
+        # Get ALB DNS name
+        ALB_DNS=$(aws elbv2 describe-load-balancers \
+          --names devops-app-prod-alb \
+          --query 'LoadBalancers[0].DNSName' \
+          --output text 2>/dev/null || echo "")
+        
+        if [ ! -z "$ALB_DNS" ]; then
+          echo "Testing health endpoint: https://$ALB_DNS/health"
+          for i in {1..10}; do
+            if curl -f -s "https://$ALB_DNS/health" > /dev/null; then
+              echo "✅ Health check passed!"
+              break
+            else
+              echo "Attempt $i: Health check failed, retrying in 30s..."
+              sleep 30
+            fi
+          done
+        else
+          echo "Could not find ALB DNS name, skipping health checks"
+        fi
+
+  notification:
+    name: Send Application Notifications
+    runs-on: ubuntu-latest
+    needs: [deploy_test, deploy_prod]
+    if: always()
+    
+    steps:
+    - name: Notify on success
+      if: ${{ needs.deploy_prod.result == 'success' || needs.deploy_test.result == 'success' }}
+      run: |
+        echo "✅ Application deployment successful!"
+        # Add your notification logic here (Slack, Teams, etc.)
+        
+    - name: Notify on failure
+      if: ${{ needs.deploy_prod.result == 'failure' || needs.deploy_test.result == 'failure' }}
+      run: |
+        echo "❌ Application deployment failed!"
+        # Add your notification logic here (Slack, Teams, etc.)
+
+
